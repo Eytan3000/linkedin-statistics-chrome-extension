@@ -1,0 +1,29 @@
+body {
+  background-color: #fff;
+  height: 400px;
+  width: 300px;
+}
+.popup-main-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.popup-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+}
+.popup-list-row-container {
+  border: 0.5px solid #aeaaff;
+  border-radius: 10px;
+  padding: 15px;
+  cursor: pointer;
+}
+.popup-search-company-input {
+  cursor: auto;
+}
+.popup-form {
+  margin: 30px auto;
+}

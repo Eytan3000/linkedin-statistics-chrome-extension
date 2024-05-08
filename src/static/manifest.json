@@ -16,8 +16,19 @@
   "permissions": [
     "storage",
     "webNavigation",
-    "activeTab"
+    "activeTab",
+    "tabs",
+    "commands"
   ],
+  "commands": {
+    "save_job_post": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Save Job Post"
+    }
+  },
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"

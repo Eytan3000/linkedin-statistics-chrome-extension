@@ -29,6 +29,10 @@
       "description": "Save Job Post"
     }
   },
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"

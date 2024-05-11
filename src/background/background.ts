@@ -1,4 +1,4 @@
-console.log('Background2');
+import { Message } from '../contentScript/contentScript';
 
 // VARIABLES -----------------------------
 // check if user is on a job post
@@ -8,8 +8,11 @@ const job_url_part_str2 = 'currentJobId';
 // keystroke names
 const save_job_keystroke = 'save_job_post';
 
+// urlParams:
+const currentJobIdParam = 'currentJobId';
+
 // Global states - Chrome Storage ---------------------
-type GlobalStateKey = 'currentUrl' | 'isJobPost';
+type GlobalStateKey = 'currentUrl' | 'isJobPost' | 'jobPostId';
 
 function setState(key: GlobalStateKey, value: any) {
   chrome.storage.sync.set({ [key]: value }, () => {
@@ -35,28 +38,56 @@ function isJobPostFn(url: string) {
   return url.includes(job_url_part_str1) && url.includes(job_url_part_str2);
 }
 
+function getParamFromUrl(currentUrl: string, paramName: string) {
+  if (!currentUrl) return null;
+  if (!currentUrl.includes(paramName)) return null;
+  return currentUrl.split(paramName + '=')[1].split('&')[0];
+}
+
+// function sendToCloudFunction(message:any){
+
+// }
+
 // ------on Installed -------------------
 // chrome.runtime.onInstalled.addListener(() => {
 //   // TODO: on installed function
 // })
 
+// --- Listen to content script ------------------------
+chrome.runtime.onMessage.addListener(
+  (message: Message, sender, sendResponse) => {
+    console.log('message.type: ', message.type); //removeEytan
+    if ((message.type = 'jobPostHtml'))
+      console.log('Message from content script:', message.message);
+    const jobPostId = getState('jobPostId');
+
+    LICE_Main(message, jobPostId);
+
+    // Send a response back to the content script
+    // sendResponse({ reply: 'Message received by background script!' });
+  }
+);
+
 // ------ Listen for tab updates Checks if on job - User clicks and changes job description
 
+// ---- on Update -----------------------
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  console.log('changeInfo: ', changeInfo); //removeEytan
-  console.log('changeInfo.status: ', changeInfo.status); //removeEytan
+  const isJobPost = await getState('isJobPost');
+  if (!isJobPost) return;
+
+  if (changeInfo.status === 'loading') {
+    const url = changeInfo.url;
+    const jobPostId = getParamFromUrl(url, currentJobIdParam);
+    console.log('jobPostId: ', jobPostId); //removeEytan
+    setState('jobPostId', jobPostId);
+  }
   if (changeInfo.status === 'complete') {
     setState('isJobPost', isJobPostFn(tab.url));
 
-    const isJobPost = await getState('isJobPost');
-    if (isJobPost) {
-      console.log('isJob yes');
-
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        // Send a message to the content script in the active tab
-        chrome.tabs.sendMessage(tabs[0].id, { message: 'msg_tabs.onUpdated' });
-      });
-    }
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      // Send a message to the content script in the active tab
+      chrome.tabs.sendMessage(tabs[0].id, { message: 'msg_tabs.onUpdated' });
+    });
   }
 });
 
@@ -93,16 +124,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const currentTab = await getCurrentTab();
   setState('isJobPost', isJobPostFn(currentTab.url));
 });
-
-// -------------------------------------------
-
-// // Listen for messages from content scripts
-// chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-//   console.log("Message from content script:", message);
-
-//   // Send a response back to the content script
-//   sendResponse({ reply: "Message received by background script!" });
-// });
 
 // -- wait for content to load (onCompleted) ------
 chrome.webNavigation.onCompleted.addListener(function (details) {

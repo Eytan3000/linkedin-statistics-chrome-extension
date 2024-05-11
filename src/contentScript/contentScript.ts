@@ -1,22 +1,34 @@
 // * copy the classnames as is
 
 const JobPostClass = 'jobs-search__job-details--wrapper';
-const jobTitleClass = '.job-details-jobs-unified-top-card__job-title';
+
+// -- divs to remove: --
+const mapImage = 'jobs-premium-applicant-insights__applicant-location-map';
+const lastPremiumCard =
+  'jobs-premium-company-insights artdeco-card premium-accent-bar';
+const aboutTheCompany =
+  'jobs-company jobs-box--fadein mb4 jobs-company--two-pane';
+const premiumFeatures = 'coach-shared-hscroll-bar__multi-container';
+const easyApply = 'jobs-s-apply jobs-s-apply--fadein inline-flex mr2';
+const saveButton =
+  'jobs-save-button artdeco-button artdeco-button--3 artdeco-button--secondary';
+const resetMapButton = 'jobs-premium-applicant-insights__reset-map-button p2';
+
+// div to hash:
+const jobTitleClass = 'job-details-jobs-unified-top-card__job-title';
+const comanyContainer = 'job-details-jobs-unified-top-card__company-name';
 // --------------------------------------------------------------------------
 
 // job post html element catch: ----------------------------------------
 
-const jobTitleHtmlElement = document.querySelector(jobTitleClass);
-const entireJobPostHtmlEl = document.querySelector(JobPostClass);
-
 const divsToRemove = [
-  'jobs-premium-applicant-insights__applicant-location-map',
-  'jobs-premium-company-insights artdeco-card premium-accent-bar',
-  'jobs-company jobs-box--fadein mb4 jobs-company--two-pane',
-  'coach-shared-hscroll-bar__multi-container',
-  'jobs-s-apply jobs-s-apply--fadein inline-flex mr2',
-  'jobs-save-button artdeco-button artdeco-button--3 artdeco-button--secondary',
-  'jobs-premium-applicant-insights__reset-map-button p2',
+  mapImage,
+  lastPremiumCard,
+  aboutTheCompany,
+  premiumFeatures,
+  easyApply,
+  saveButton,
+  resetMapButton,
 ];
 
 // -- Helpers --------------------
@@ -48,57 +60,35 @@ async function retryUntilNotNull(divClass: string) {
   });
 }
 
-// entireJobPostHtmlEl.removeChild()
-// console.log(entireJobPostHtmlEl.outerHTML);
-
-// let actualJobTitle: string;
-// if (entireJobPostHtmlEl) {
-// //   actualJobTitle = entireJobPostHtmlEl.textContent.trim();
-//   console.log(entireJobPostHtmlEl);
-// } else {
-//   console.log('Element not found.');
-// }
-
-// // Send a message from content script to background script
-// chrome.runtime.sendMessage(
-//   { message: entireJobPostHtmlEl.outerHTML },
-//   function (response) {
-//     console.log('Response from background script:', response);
-//   }
-// );
+type MessageType = 'jobPostHtml';
+export interface Message {
+  message: string;
+  type: MessageType;
+}
+// Send a message from content script to background script
+function sendToBg(message: string, type: MessageType) {
+  chrome.runtime.sendMessage({ message, type }, function (response) {
+    console.log('Response from background script:', response);
+  });
+}
 
 // -- Listen to background ---
-// chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-//   if (message.message === 'myMessage') {
-//     console.log('received message');
-//     const x = document.querySelector(
-//       '.jobs-premium-company-insights.artdeco-card.premium-accent-bar'
-//     );
-//     console.log('x: ', x); //removeEytan
-//   }
-// });
-
-// -----------------------------
-// Listen for messages from the background script
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   // Check if the message action is "pageLoaded"
-  if (message.action === 'pageLoaded') {
-    // Perform actions here after the page has finished loading
-    console.log('Content script received message: Page finished loading.');
-
-    // const x = document.querySelector(
-    //   '.jobs-premium-company-insights.artdeco-card.premium-accent-bar'
-    // );
-    // console.log('pageLoadedX: ', x); //removeEytan
-  }
+  // if (message.action === 'pageLoaded') {
+  //   // Perform actions here after the page has finished loading
+  //   console.log('Content script received message: Page finished loading.');
+  // }
 
   // User clicks on a job on left column:
-  if (message.message === 'msg_tabs.onUpdated') {
+  if (
+    message.message === 'msg_tabs.onUpdated' ||
+    message.action === 'pageLoaded'
+  ) {
     try {
       const jobPostEl = (await retryUntilNotNull(
         JobPostClass
       )) as HTMLElement | null;
-      console.log(jobPostEl);
 
       const clonedJobPostEl = jobPostEl.cloneNode(true) as HTMLElement | null; // if you dont clone the element, all changes will affect the actual DOM.
 
@@ -111,7 +101,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         }
       });
 
-      console.log('124: ', clonedJobPostEl);
+      sendToBg(clonedJobPostEl.outerHTML, 'jobPostHtml');
 
       // ------------------------------------------------------
     } catch (err) {
